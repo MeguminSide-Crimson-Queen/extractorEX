@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ExtractorEX – Generador HTML para Juegos de Steam</title>
+<title>ExtractorEX – Steam → HTML</title>
 
 <style>
   body {
@@ -72,6 +72,10 @@
 </div>
 
 <script>
+
+// 🔥 Tu Worker ya integrado:
+const PROXY_URL = "https://purple-sun-c5cb.freeblueth67.workers.dev";
+
 async function procesar() {
   const url = document.getElementById("steam-url").value.trim();
 
@@ -80,31 +84,41 @@ async function procesar() {
     return;
   }
 
-  const appId = url.split("/app/")[1].split("/")[0];
+  // Pedimos la página HTML completa desde tu Worker
+  const res = await fetch(`${PROXY_URL}/?url=${encodeURIComponent(url)}`);
+  const html = await res.text();
 
-  const apiUrl = `https://store.steampowered.com/api/appdetails?appids=${appId}&l=spanish`;
+  // Creamos un DOM virtual para extraer datos reales de Steam
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
 
-  const res = await fetch(apiUrl);
-  const data = await res.json();
+  // ----------- EXTRACCIÓN AUTOMÁTICA DESDE STEAM -------------
+  const titulo =
+    doc.querySelector(".apphub_AppName")?.textContent.trim() ||
+    "Título no encontrado";
 
-  if (!data[appId].success) {
-    alert("No se pudo obtener datos del juego.");
-    return;
-  }
+  const descripcion =
+    doc.querySelector("#game_highlights .game_description_snippet")
+      ?.textContent.trim() ||
+    "Sin descripción";
 
-  const game = data[appId].data;
+  const img =
+    doc.querySelector(".game_header_image_full")?.src ||
+    "";
 
-  // Datos importantes
-  const titulo = game.name;
-  const descripcion = game.short_description;
-  const img = game.header_image;
-  const desarrollador = game.developers?.[0] || "Desconocido";
-  const genero = game.genres?.map(g => g.description).join(", ") || "N/A";
-  const lanzamiento = game.release_date?.date || "N/A";
+  const desarrollador =
+    doc.querySelector("a[href*='developer']")?.textContent.trim() ||
+    "Desconocido";
 
-  // -----------------------------
-  // 🔥 ESTA ES TU PLANTILLA HTML
-  // -----------------------------
+  const genero = [...doc.querySelectorAll(".details_block a[href*='genre']")]
+      .map(a => a.textContent.trim())
+      .join(", ") || "N/A";
+
+  const lanzamiento =
+    doc.querySelector(".release_date .date")?.textContent.trim() ||
+    "N/A";
+  // -------------------------------------------------------------
+
   const htmlTemplate = `
 <!DOCTYPE html>
 <html lang="es">
