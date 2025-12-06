@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ExtractorEX – Generador HTML para Juegos de Steam</title>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #0b0b0b;
+    color: #fff;
+    margin: 0;
+    padding: 20px;
+  }
+
+  h1 { text-align: center; }
+
+  .box {
+    background: #111;
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px auto;
+    max-width: 900px;
+  }
+
+  input, textarea {
+    width: 100%;
+    padding: 12px;
+    border-radius: 6px;
+    border: none;
+    margin-top: 10px;
+    background: #222;
+    color: #fff;
+  }
+
+  button {
+    margin-top: 15px;
+    padding: 12px 20px;
+    background: #3a6df0;
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  button:hover { background: #2b52c7; }
+
+  #output-html {
+    min-height: 300px;
+    margin-top: 20px;
+  }
+</style>
+</head>
+<body>
+
+<h1>ExtractorEX – Steam → HTML Generator</h1>
+
+<div class="box">
+  <label>URL de Steam:</label>
+  <input id="steam-url" type="text" placeholder="https://store.steampowered.com/app/367520/Hollow_Knight/">
+
+  <button onclick="procesar()">Extraer y Generar HTML</button>
+</div>
+
+<div class="box">
+  <h3>Resultado HTML generado:</h3>
+  <textarea id="output-html"></textarea>
+
+  <button onclick="copiar()">Copiar todo</button>
+  <button onclick="descargar()">Download .html</button>
+</div>
+
+<script>
+async function procesar() {
+  const url = document.getElementById("steam-url").value.trim();
+
+  if (!url.includes("steampowered.com/app/")) {
+    alert("URL inválida de Steam");
+    return;
+  }
+
+  const appId = url.split("/app/")[1].split("/")[0];
+
+  const apiUrl = `https://store.steampowered.com/api/appdetails?appids=${appId}&l=spanish`;
+
+  const res = await fetch(apiUrl);
+  const data = await res.json();
+
+  if (!data[appId].success) {
+    alert("No se pudo obtener datos del juego.");
+    return;
+  }
+
+  const game = data[appId].data;
+
+  // Datos importantes
+  const titulo = game.name;
+  const descripcion = game.short_description;
+  const img = game.header_image;
+  const desarrollador = game.developers?.[0] || "Desconocido";
+  const genero = game.genres?.map(g => g.description).join(", ") || "N/A";
+  const lanzamiento = game.release_date?.date || "N/A";
+
+  // -----------------------------
+  // 🔥 ESTA ES TU PLANTILLA HTML
+  // -----------------------------
+  const htmlTemplate = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${titulo}</title>
+<link rel="stylesheet" href="style-cata.css">
+</head>
+<body>
+
+<header>
+  <h1>${titulo}</h1>
+</header>
+
+<section class="game-container">
+  <img src="${img}" class="game-cover">
+
+  <div class="game-info">
+    <h2>${titulo}</h2>
+    <p><strong>Descripción:</strong> ${descripcion}</p>
+    <p><strong>Género:</strong> ${genero}</p>
+    <p><strong>Desarrollador:</strong> ${desarrollador}</p>
+    <p><strong>Fecha de lanzamiento:</strong> ${lanzamiento}</p>
+
+    <a href="${url}" target="_blank" class="btn">Ver en Steam</a>
+  </div>
+</section>
+
+</body>
+</html>
+  `.trim();
+
+  document.getElementById("output-html").value = htmlTemplate;
+}
+
+function copiar() {
+  const text = document.getElementById("output-html");
+  text.select();
+  document.execCommand("copy");
+  alert("HTML copiado al portapapeles ✔️");
+}
+
+function descargar() {
+  const contenido = document.getElementById("output-html").value;
+  const blob = new Blob([contenido], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "juego-generado.html";
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+</script>
+
+</body>
+</html>
