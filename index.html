@@ -68,13 +68,12 @@
   <textarea id="output-html"></textarea>
 
   <button onclick="copiar()">Copiar todo</button>
-  <button onclick="descargar()">Download .html</button>
 </div>
 
 <script>
 
-// 🔥 Tu Worker ya integrado:
-const PROXY_URL = "https://purple-sun-c5cb.freeblueth67.workers.dev";
+// Tu Worker:
+const WORKER = "https://purple-sun-c5cb.freeblueth67.workers.dev/?url=";
 
 async function procesar() {
   const url = document.getElementById("steam-url").value.trim();
@@ -84,95 +83,17 @@ async function procesar() {
     return;
   }
 
-  // Pedimos la página HTML completa desde tu Worker
-  const res = await fetch(`${PROXY_URL}/?url=${encodeURIComponent(url)}`);
-  const html = await res.text();
+  const res = await fetch(WORKER + encodeURIComponent(url));
+  const text = await res.text();
 
-  // Creamos un DOM virtual para extraer datos reales de Steam
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, "text/html");
-
-  // ----------- EXTRACCIÓN AUTOMÁTICA DESDE STEAM -------------
-  const titulo =
-    doc.querySelector(".apphub_AppName")?.textContent.trim() ||
-    "Título no encontrado";
-
-  const descripcion =
-    doc.querySelector("#game_highlights .game_description_snippet")
-      ?.textContent.trim() ||
-    "Sin descripción";
-
-  const img =
-    doc.querySelector(".game_header_image_full")?.src ||
-    "";
-
-  const desarrollador =
-    doc.querySelector("a[href*='developer']")?.textContent.trim() ||
-    "Desconocido";
-
-  const genero = [...doc.querySelectorAll(".details_block a[href*='genre']")]
-      .map(a => a.textContent.trim())
-      .join(", ") || "N/A";
-
-  const lanzamiento =
-    doc.querySelector(".release_date .date")?.textContent.trim() ||
-    "N/A";
-  // -------------------------------------------------------------
-
-  const htmlTemplate = `
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${titulo}</title>
-<link rel="stylesheet" href="style-cata.css">
-</head>
-<body>
-
-<header>
-  <h1>${titulo}</h1>
-</header>
-
-<section class="game-container">
-  <img src="${img}" class="game-cover">
-
-  <div class="game-info">
-    <h2>${titulo}</h2>
-    <p><strong>Descripción:</strong> ${descripcion}</p>
-    <p><strong>Género:</strong> ${genero}</p>
-    <p><strong>Desarrollador:</strong> ${desarrollador}</p>
-    <p><strong>Fecha de lanzamiento:</strong> ${lanzamiento}</p>
-
-    <a href="${url}" target="_blank" class="btn">Ver en Steam</a>
-  </div>
-</section>
-
-</body>
-</html>
-  `.trim();
-
-  document.getElementById("output-html").value = htmlTemplate;
+  document.getElementById("output-html").value = text;
 }
 
 function copiar() {
   const text = document.getElementById("output-html");
   text.select();
   document.execCommand("copy");
-  alert("HTML copiado al portapapeles ✔️");
-}
-
-function descargar() {
-  const contenido = document.getElementById("output-html").value;
-  const blob = new Blob([contenido], { type: "text/html" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "juego-generado.html";
-  a.click();
-
-  URL.revokeObjectURL(url);
+  alert("HTML copiado ✔️");
 }
 </script>
 
