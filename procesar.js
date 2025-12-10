@@ -4,7 +4,7 @@ document.getElementById("generateBtn").addEventListener("click", procesarURL);
 // === función principal ===
 async function procesarURL() {
     const input = document.getElementById("steamUrl");
-    const output = document.getElementById("output"); // ← ID corregido
+    const output = document.getElementById("output");
     const url = input.value.trim();
 
     if (!url) {
@@ -15,12 +15,13 @@ async function procesarURL() {
     output.value = "⏳ Extrayendo datos desde Steam...";
 
     try {
-        // Proxy para evitar CORS
-        const proxied = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+        // ============================
+        // 🔥 USAR CLOUDFLARE WORKER
+        // ============================
+        const proxied = `https://extract.freeblueth67.workers.dev/?url=${encodeURIComponent(url)}`;
 
         const response = await fetch(proxied);
-        const data = await response.json();
-        const html = data.contents;
+        const html = await response.text(); // ← Worker devuelve HTML directo
 
         // EXTRAER DATOS DE STEAM
         const titulo = (html.match(/<div class="apphub_AppName">([^<]+)<\/div>/)?.[1] || "Sin título").trim();
@@ -40,9 +41,9 @@ async function procesarURL() {
         const pub = html.match(/Publisher:<\/div>\s*<div[^>]*>\s*<a[^>]*>([^<]+)/)?.[1] || "Desconocido";
 
         const precio =
-              html.match(/"final_formatted"\s*:\s*"([^"]+)"/)?.[1] ||
-              html.match(/<div class="game_purchase_price price">([^<]+)/)?.[1] ||
-              "Gratis";
+            html.match(/"final_formatted"\s*:\s*"([^"]+)"/)?.[1] ||
+            html.match(/<div class="game_purchase_price price">([^<]+)/)?.[1] ||
+            "Gratis";
 
         const imgs = [...html.matchAll(/<img src="([^"]+)" class="highlight_screenshot"/g)]
                      .map(m => m[1].replace(".116x65", ""))
@@ -83,7 +84,7 @@ async function procesarURL() {
 };`
         );
 
-        // Mostrar el resultado
+        // Mostrar el resultado final
         output.value = exHtml;
     }
 
