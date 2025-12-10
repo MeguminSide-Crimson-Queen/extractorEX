@@ -1,612 +1,111 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Ficha de juego — Steam extractor</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Generador Steam → HTML</title>
 
-<!-- Favicon (opcional) -->
-<link rel="icon" type="image/png" href="https://eclipseoverclock.wordpress.com/wp-content/uploads/2025/11/eclipse-overclock-1.png">
+  <style>
+    body {
+      background: #0b0b0b;
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
 
-<style>
-/* box-sizing global: evita sorpresas con paddings/anchos */
-*, *::before, *::after { box-sizing: border-box; }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
 
-body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #121212;
-  color: #f0f0f0;
-  margin: 0;
-  padding: 0;
-}
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: #111;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.08);
+    }
 
-/* Layout */
-.header {
-  padding: 18px 28px;
-  display:flex;
-  gap:12px;
-  align-items:center;
-  background: linear-gradient(90deg,#0f1720,#0b1220);
-  border-bottom: 1px solid #151515;
-}
-.header h1 { margin:0; font-size:1.05rem; }
-.header .input-wrap { margin-left:auto; display:flex; gap:8px; align-items:center; }
-.header input[type="text"] {
-  width:420px; max-width:55vw;
-  padding:10px 12px;
-  border-radius:6px;
-  border:1px solid #2a2a2a;
-  background:#0f0f0f;
-  color:#fff;
-}
-.header button {
-  padding:10px 14px;
-  border-radius:6px;
-  border: none;
-  background:#ff0055;
-  color:#fff;
-  cursor:pointer;
-  font-weight:600;
-}
+    label {
+      font-size: 18px;
+      display: block;
+      margin-bottom: 8px;
+    }
 
-/* Container */
-.container {
-  display: flex;
-  justify-content: space-between;
-  padding: 28px;
-  gap: 28px;
-}
-.main-content { flex: 2.5; }
-.sidebar {
-  flex: 1;
-  background: #1e1e1e;
-  padding: 20px;
-  border-radius: 10px;
-  height: fit-content;
-}
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+      background: #222;
+      color: white;
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
 
-h1#titulo { font-size: 2rem; font-weight: 700; margin-bottom: 5px; }
-.rating { color: #fff; margin-bottom: 15px; }
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #3a6df0;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      transition: 0.2s;
+    }
 
-/* ===== SLIDER ===== */
-.slider {
-  position: relative;
-  overflow: hidden;
-  border-radius: 10px;
-  width: 100%;
-  background: #000;
-  aspect-ratio: 16 / 9;
-}
+    button:hover {
+      background: #2f54c7;
+    }
 
-/* ==== FIX DEL SLIDER ==== */
-.slides {
-  display: flex;
-  transition: transform 0.6s ease;
-  height: 100%;
-  width: 100%;
-}
-.slides > * {
-  flex: 0 0 100%;
-  height: 100%;
-}
-.slides iframe,
-.slides img,
-.slides video {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  border-radius: 10px;
-  background: #000;
-  display: block;
-}
+    textarea {
+      width: 100%;
+      height: 350px;
+      background: #1a1a1a;
+      color: #00ff9d;
+      border: none;
+      outline: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 15px;
+      resize: vertical;
+      white-space: pre;
+    }
 
-/* ===== FLECHAS ===== */
-.arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 30px;
-  background: rgba(0,0,0,0.45);
-  color: #fff;
-  border: none;
-  cursor: pointer;
-  padding: 8px 12px;
-  border-radius: 50%;
-  z-index: 5;
-}
-.arrow.left { left: 10px; }
-.arrow.right { right: 10px; }
+    .loading {
+      display: none;
+      text-align: center;
+      margin-bottom: 20px;
+      color: #00e6ff;
+    }
 
-/* ===== MINIATURAS ===== */
-.thumbnails {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-  overflow-x: auto;
-  padding-bottom: 5px;
-}
-.thumbnails img {
-  width: 110px;
-  height: 70px;
-  border-radius: 6px;
-  object-fit: cover;
-  cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.3s, border 0.3s;
-  background: #000;
-}
-.thumbnails img.active {
-  opacity: 1;
-  border: 2px solid #ff0055;
-}
-
-section { margin-top: 22px; }
-h2 {
-  font-size: 1.15rem;
-  border-bottom: 2px solid #333;
-  padding-bottom: 6px;
-  margin-bottom: 12px;
-}
-
-ul { list-style: none; padding-left: 0; margin:0; }
-li { margin-bottom: 8px; }
-
-.tags { display: flex; flex-wrap: wrap; gap: 8px; }
-.tag { background: #333; padding: 6px 10px; border-radius: 6px; font-size: 0.92rem; }
-
-.sidebar img.logo { width: 100%; margin-bottom: 10px; border-radius: 8px; object-fit:cover; height:140px; }
-
-.price { font-size: 1.2rem; color: #fff; margin: 10px 0; }
-
-.btn {
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: bold;
-  font-size: 1rem;
-  margin-bottom: 10px;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-}
-.buy-btn { background: #0078ff; color: white; }
-.cart-btn, .wishlist-btn { background: #2c2c2c; color: #fff; }
-
-.footer-info {
-  font-size: 0.85rem;
-  color: #bbb;
-  margin-top: 20px;
-  border-top: 1px solid #333;
-  padding-top: 10px;
-}
-
-@media (max-width: 900px) {
-  .container { flex-direction: column; padding: 16px; }
-  .header input[type="text"] { width: 220px; }
-}
-
-/* === Modal === */
-.modal {
-  display: none;
-  position: fixed;
-  z-index: 100;
-  left: 0; top: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.7);
-  justify-content: center;
-  align-items: center;
-}
-.modal-content {
-  background: #1e1e1e;
-  padding: 20px;
-  border-radius: 10px;
-  text-align: center;
-}
-.modal-content h2 { margin-bottom: 15px; }
-.close-btn { background: #ff0055; color: #fff; margin-top: 15px; }
-</style>
+  </style>
 </head>
 <body>
 
-<div class="header">
-  <h1>Steam → Ficha automática</h1>
-  <div class="input-wrap">
-    <input id="steamUrl" type="text" placeholder="Pega aquí la URL de Steam (ej: https://store.steampowered.com/app/367520/Hollow_Knight/)"/>
-    <button id="loadBtn">Cargar desde Steam</button>
-  </div>
-</div>
+  <h1>Generador Steam → Código HTML</h1>
 
-<div class="container">
-  <div class="main-content">
-    <h1 id="titulo">—</h1>
-    <div class="rating" id="rating">—</div>
+  <div class="container">
 
-    <div class="slider" id="slider" aria-hidden="true">
-      <div class="slides" id="slides"></div>
-      <button class="arrow left" id="prev">&#10094;</button>
-      <button class="arrow right" id="next">&#10095;</button>
-    </div>
-    <div class="thumbnails" id="thumbnails"></div>
+    <label for="steamUrl">Pega aquí la URL del juego en Steam:</label>
+    <input type="text" id="steamUrl" placeholder="https://store.steampowered.com/app/XXXXXX/Nombre_del_Juego/" />
 
-    <section>
-      <h2>Descripción</h2>
-      <p id="descripcion">—</p>
-    </section>
+    <button id="generateBtn">Generar código</button>
 
-    <section>
-      <h2>Géneros</h2>
-      <div class="tags" id="generos"></div>
-    </section>
+    <div class="loading" id="loading">Procesando... Por favor espera.</div>
 
-    <section>
-      <h2>Funciones</h2>
-      <div class="tags" id="funciones"></div>
-    </section>
+    <label for="output">Código generado listo para copiar:</label>
+    <textarea id="output" readonly></textarea>
 
-    <section>
-      <h2>Requisitos del sistema</h2>
-      <div id="requisitos">—</div>
-    </section>
   </div>
 
-  <aside class="sidebar">
-    <img id="logo" class="logo" alt="logo del juego" src="https://via.placeholder.com/400x140?text=Sin+logo">
-    <div class="price" id="precio">—</div>
-
-    <button class="btn buy-btn" id="btn-buy">Descarga Now!</button>
-    <button class="btn cart-btn" id="btn-cart">Ver saga completa</button>
-    <button class="btn wishlist-btn" id="btn-wish">Cerrar</button>
-
-    <div class="footer-info" id="info">—</div>
-  </aside>
-</div>
-
-<!-- Modal -->
-<div class="modal" id="downloadModal">
-  <div class="modal-content">
-    <h2>Selecciona una opción</h2>
-    <button class="btn" onclick="window.open('https://gofile.io','_blank')">GoFile</button>
-    <button class="btn close-btn" id="closeModal">Cerrar</button>
-  </div>
-</div>
-
-<script>
-/*
-  Extractor cliente usando API oficial de Steam:
-  https://store.steampowered.com/api/appdetails?appids=APPID
-  Funciona perfectamente desde GitHub Pages (no necesita backend).
-*/
-
-/* Utilidades */
-function extractAppIdFromUrl(url) {
-  try {
-    const u = new URL(url.trim());
-    // formatos posibles:
-    // /app/367520/Name/
-    // /sub/XXXXX/
-    const parts = u.pathname.split('/').filter(Boolean);
-    if (!parts.length) return null;
-    // find first numeric segment
-    for (const p of parts) {
-      if (/^\d+$/.test(p)) return p;
-    }
-    return null;
-  } catch (e) {
-    return null;
-  }
-}
-
-function safeText(html) {
-  // convierte HTML largo en texto limpio cuando convenga
-  const tmp = document.createElement('div');
-  tmp.innerHTML = html || '';
-  return tmp.textContent || tmp.innerText || '';
-}
-
-function clearFicha() {
-  document.getElementById('titulo').textContent = 'Cargando...';
-  document.getElementById('rating').textContent = '';
-  document.getElementById('descripcion').textContent = '';
-  document.getElementById('precio').textContent = '';
-  document.getElementById('logo').src = 'https://via.placeholder.com/400x140?text=Cargando...';
-  document.getElementById('info').innerHTML = '';
-  document.getElementById('generos').innerHTML = '';
-  document.getElementById('funciones').innerHTML = '';
-  document.getElementById('requisitos').innerHTML = '';
-  document.getElementById('slides').innerHTML = '';
-  document.getElementById('thumbnails').innerHTML = '';
-}
-
-function crearMedia(url) {
-  if (!url) return document.createElement('div');
-  const lower = url.toLowerCase();
-
-  // imágenes directas
-  if (lower.match(/\.(jpg|jpeg|png|webp)(\?.*)?$/)) {
-    const img = document.createElement("img");
-    img.src = url;
-    img.alt = "imagen del juego";
-    img.onerror = () => (img.src = "https://via.placeholder.com/800x450?text=Imagen+no+disponible");
-    return img;
-  }
-
-  // mp4/webm
-  if (lower.match(/\.(mp4|webm|ogg)(\?.*)?$/)) {
-    const vid = document.createElement("video");
-    vid.src = url;
-    vid.controls = true;
-    vid.preload = "metadata";
-    vid.style.background = "#000";
-    return vid;
-  }
-
-  // fallback: iframe
-  const iframe = document.createElement("iframe");
-  iframe.src = url;
-  iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen";
-  iframe.frameBorder = "0";
-  iframe.loading = "lazy";
-  iframe.style.background = "#000";
-  return iframe;
-}
-
-/* Slider simple */
-let index = 0;
-function showSlide(i) {
-  const slides = document.getElementById('slides');
-  const thumbs = document.querySelectorAll('.thumbnails img');
-  index = i;
-  slides.style.transform = `translateX(${-index * 100}%)`;
-  thumbs.forEach((el, idx) => el.classList.toggle('active', idx === i));
-}
-
-/* Botones prev/next */
-document.getElementById("next").onclick = () => {
-  const imgs = document.querySelectorAll('#slides > *');
-  if (!imgs.length) return;
-  index = (index + 1) % imgs.length;
-  showSlide(index);
-};
-document.getElementById("prev").onclick = () => {
-  const imgs = document.querySelectorAll('#slides > *');
-  if (!imgs.length) return;
-  index = (index - 1 + imgs.length) % imgs.length;
-  showSlide(index);
-};
-
-/* Modal */
-document.getElementById("btn-buy").onclick = () => {
-  document.getElementById("downloadModal").style.display = "flex";
-};
-document.getElementById("closeModal").onclick = () => {
-  document.getElementById("downloadModal").style.display = "none";
-};
-window.onclick = (event) => {
-  const modal = document.getElementById("downloadModal");
-  if (event.target === modal) modal.style.display = "none";
-};
-
-/* Carga desde Steam API */
-async function cargarDesdeSteam(url) {
-  clearFicha();
-  const id = extractAppIdFromUrl(url);
-  if (!id) {
-    alert('No se pudo obtener el AppID desde la URL. Revisa la URL de Steam.');
-    document.getElementById('titulo').textContent = 'Error: AppID no encontrado';
-    return;
-  }
-
-  const apiUrl = `https://store.steampowered.com/api/appdetails?appids=${id}&cc=us&l=spanish`;
-  try {
-    const resp = await fetch(apiUrl);
-    if (!resp.ok) throw new Error('Error en la llamada API');
-    const json = await resp.json();
-    if (!json[id] || !json[id].success) throw new Error('Steam no devolvió datos para ese AppID');
-
-    const data = json[id].data;
-
-    // Construir objeto "juego" similar a tu estructura original
-    const juego = {
-      titulo: data.name || 'Sin título',
-      rating: (() => {
-        if (data.recommendations && data.recommendations.total) {
-          return `★ ${Math.round(Math.min(5, Math.max(1, (data.recommendations.total/100000) * 5))) } | ${data.recommendations.total} recomendaciones en Steam`;
-        } else if (data.metacritic && data.metacritic.score) {
-          return `★ ${ (data.metacritic.score/20).toFixed(1) } | Metacritic ${data.metacritic.score}`;
-        } else {
-          return '★ — | Sin valoraciones';
-        }
-      })(),
-      descripcion: safeText(data.detailed_description || data.short_description || ''),
-      generos: (data.genres || []).map(g => g.description || g),
-      funciones: [
-        data.supports_remote_play ? 'Soporta Remote Play' : null,
-        data.controllers ? 'Compatible con mando' : null,
-        data.is_free ? 'Gratis' : null,
-        data.featured_tags ? null : null
-      ].filter(Boolean),
-      precio: (() => {
-        if (data.is_free) return 'Gratis';
-        if (data.price_overview) {
-          const p = data.price_overview;
-          return `${p.final_formatted || (p.final/100 + ' USD')}`;
-        }
-        return 'Sin información de precio';
-      })(),
-      logo: (data.header_image) ? data.header_image : (data.background || ''),
-      info: `
-        <strong>Desarrolladora:</strong> ${data.developers ? safeText(data.developers.join(', ')) : '—'}<br>
-        <strong>Editora:</strong> ${data.publishers ? safeText(data.publishers.join(', ')) : '—'}<br>
-        <strong>Fecha de lanzamiento:</strong> ${data.release_date ? safeText(data.release_date.date) : '—'}<br>
-        <strong>Plataforma:</strong> ${data.platforms ? Object.entries(data.platforms).filter(([k,v])=>v).map(([k])=>k).join(', ') : '—'}<br>
-        <strong>Sitio Extraido:</strong> Steam<br>
-      `,
-      requisitos: {
-        minimos: {},
-        recomendados: {}
-      },
-      imagenes: [] // se llenará debajo
-    };
-
-    // Requisitos: steam devuelve 'pc_requirements' en varios idiomas; puede ser string o {minimum,recommended}
-    if (data.pc_requirements) {
-      if (typeof data.pc_requirements === 'string') {
-        // no estructurado; ponemos en mínimos la cadena
-        juego.requisitos.minimos['Requisitos'] = safeText(data.pc_requirements);
-      } else {
-        // objeto
-        if (data.pc_requirements.minimum) juego.requisitos.minimos['Mínimos'] = safeText(data.pc_requirements.minimum);
-        if (data.pc_requirements.recommended) juego.requisitos.recomendados['Recomendados'] = safeText(data.pc_requirements.recommended);
-      }
-    }
-
-    // Imágenes: screenshots y movies
-    if (Array.isArray(data.screenshots)) {
-      data.screenshots.forEach(s => {
-        // Steam: s.path_full (imagen grande) y s.path_thumbnail
-        juego.imagenes.push({
-          page: s.path_full || s.path_thumbnail,
-          thumbnail: s.path_thumbnail || s.path_full
-        });
-      });
-    }
-
-    if (Array.isArray(data.movies)) {
-      data.movies.forEach(m => {
-        // movies: m.webm (obj), m.thumbnail
-        // Usaremos el stream webm 'max' si existe; si no '480'
-        let videoUrl = null;
-        if (m.webm) {
-          videoUrl = m.webm['max'] || m.webm['webm'] || m.webm['480'] || m.webm['720'] || null;
-        }
-        // si no hay webm tomamos mp4
-        if (!videoUrl && m.mp4) {
-          videoUrl = m.mp4['max'] || m.mp4['480'] || null;
-        }
-        // Si existe videoUrl lo agregamos; si no, agregamos la thumb como imagen
-        if (videoUrl) {
-          juego.imagenes.unshift({
-            page: videoUrl,
-            thumbnail: m.thumbnail || (m.thumb ? m.thumb : '')
-          });
-        } else if (m.thumbnail) {
-          juego.imagenes.unshift({
-            page: m.thumbnail,
-            thumbnail: m.thumbnail
-          });
-        }
-      });
-    }
-
-    // Si no hay imágenes, usar header_image y background
-    if (!juego.imagenes.length) {
-      if (data.header_image) juego.imagenes.push({ page: data.header_image, thumbnail: data.header_image });
-      if (data.background && data.background !== data.header_image) juego.imagenes.push({ page: data.background, thumbnail: data.background });
-    }
-
-    // Renderiza todo en la página
-    renderFicha(juego);
-
-    // Actualiza título de la página
-    document.title = juego.titulo + ' — Ficha';
-  } catch (err) {
-    console.error(err);
-    alert('Error al obtener datos desde Steam: ' + (err.message || err));
-    document.getElementById('titulo').textContent = 'Error al cargar desde Steam';
-  }
-}
-
-function renderFicha(juego) {
-  // texto
-  document.getElementById('titulo').textContent = juego.titulo;
-  document.getElementById('rating').textContent = juego.rating;
-  document.getElementById('descripcion').textContent = juego.descripcion;
-  document.getElementById('precio').textContent = juego.precio;
-  document.getElementById('logo').src = juego.logo || 'https://via.placeholder.com/400x140?text=Sin+logo';
-  document.getElementById('info').innerHTML = juego.info || '';
-
-  // tags
-  const genWrap = document.getElementById('generos');
-  genWrap.innerHTML = '';
-  (juego.generos || []).forEach(g => {
-    const tag = document.createElement('div');
-    tag.className = 'tag';
-    tag.textContent = g;
-    genWrap.appendChild(tag);
-  });
-
-  const funcWrap = document.getElementById('funciones');
-  funcWrap.innerHTML = '';
-  (juego.funciones || []).forEach(f => {
-    const tag = document.createElement('div');
-    tag.className = 'tag';
-    tag.textContent = f;
-    funcWrap.appendChild(tag);
-  });
-
-  // requisitos
-  let reqHTML = '<div style="display:flex; gap:20px; flex-wrap:wrap;">';
-  if (juego.requisitos.minimos && Object.keys(juego.requisitos.minimos).length) {
-    reqHTML += '<div><h3>🖥️ Mínimos</h3><ul>';
-    for (const [k,v] of Object.entries(juego.requisitos.minimos)) {
-      reqHTML += `<li><strong>${k}:</strong> ${v}</li>`;
-    }
-    reqHTML += '</ul></div>';
-  }
-  if (juego.requisitos.recomendados && Object.keys(juego.requisitos.recomendados).length) {
-    reqHTML += '<div><h3>⚙️ Recomendado</h3><ul>';
-    for (const [k,v] of Object.entries(juego.requisitos.recomendados)) {
-      reqHTML += `<li><strong>${k}:</strong> ${v}</li>`;
-    }
-    reqHTML += '</ul></div>';
-  }
-  reqHTML += '</div>';
-  document.getElementById('requisitos').innerHTML = reqHTML;
-
-  // slider + thumbnails
-  const slides = document.getElementById('slides');
-  const thumbnails = document.getElementById('thumbnails');
-  slides.innerHTML = '';
-  thumbnails.innerHTML = '';
-  const imgs = juego.imagenes || [];
-  imgs.forEach((item, i) => {
-    const mediaEl = crearMedia(item.page);
-    slides.appendChild(mediaEl);
-
-    const thumb = document.createElement('img');
-    if (item.thumbnail) thumb.src = item.thumbnail;
-    else if (item.page && item.page.match(/\.(jpg|jpeg|png|webp)$/)) thumb.src = item.page;
-    else thumb.src = 'https://img.icons8.com/ios-filled/50/ffffff/play-button-circled.png';
-    thumb.addEventListener('click', () => showSlide(i));
-    thumbnails.appendChild(thumb);
-  });
-
-  // reset slider
-  index = 0;
-  showSlide(0);
-}
-
-/* Bind UI */
-document.getElementById('loadBtn').addEventListener('click', () => {
-  const url = document.getElementById('steamUrl').value.trim();
-  if (!url) { alert('Pega la URL de Steam en el campo.'); return; }
-  cargarDesdeSteam(url);
-});
-
-/* Soporte: si el usuario pega con Enter */
-document.getElementById('steamUrl').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') document.getElementById('loadBtn').click();
-});
-
-/* Ejemplo rápido — si quieres, puedes descomentar para auto-cargar un ejemplo al abrir */
-/*
-window.addEventListener('load', () => {
-  const ejemplo = 'https://store.steampowered.com/app/367520/Hollow_Knight/';
-  document.getElementById('steamUrl').value = ejemplo;
-  cargarDesdeSteam(ejemplo);
-});
-*/
-</script>
+  <script src="procesar.js"></script>
 
 </body>
 </html>
