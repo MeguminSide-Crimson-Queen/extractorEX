@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hollow Knight</title>
+
+  <!-- Favicon desde WordPress -->
+<link rel="icon" type="image/png" href="https://eclipseoverclock.wordpress.com/wp-content/uploads/2025/11/eclipse-overclock-1.png">
+
+<style>
+/* box-sizing global: evita sorpresas con paddings/anchos */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #121212;
+  color: #f0f0f0;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  display: flex;
+  justify-content: space-between;
+  padding: 40px;
+  gap: 40px;
+}
+
+.main-content { flex: 2.5; }
+.sidebar {
+  flex: 1;
+  background: #1e1e1e;
+  padding: 20px;
+  border-radius: 10px;
+  height: fit-content;
+}
+
+h1 { font-size: 2rem; font-weight: 700; margin-bottom: 5px; }
+.rating { color: #fff; margin-bottom: 15px; }
+
+/* ===== SLIDER ===== */
+.slider {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  width: 100%;
+  background: #000;
+  aspect-ratio: 16 / 9;
+}
+
+/* ==== FIX DEL SLIDER (OPCIÓN A) ==== */
+/* .slides ocupa el ancho visible del slider (100%), no max-content */
+.slides {
+  display: flex;
+  transition: transform 0.6s ease;
+  height: 100%;
+  width: 100%;
+}
+
+/* cada slide ocupa exactamente el 100% del contenedor visible */
+.slides > * {
+  flex: 0 0 100%;
+  height: 100%;
+}
+
+/* media elements */
+.slides iframe,
+.slides img,
+.slides video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 10px;
+  background: #000;
+  display: block;
+}
+
+/* ===== FLECHAS ===== */
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 30px;
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 50%;
+  z-index: 5;
+}
+.arrow.left { left: 10px; }
+.arrow.right { right: 10px; }
+
+/* ===== MINIATURAS ===== */
+.thumbnails {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  overflow-x: auto;
+  padding-bottom: 5px;
+}
+.thumbnails img {
+  width: 110px;
+  height: 70px;
+  border-radius: 6px;
+  object-fit: cover;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.3s, border 0.3s;
+  background: #000;
+}
+.thumbnails img.active {
+  opacity: 1;
+  border: 2px solid #ff0055;
+}
+
+section { margin-top: 30px; }
+h2 {
+  font-size: 1.3rem;
+  border-bottom: 2px solid #333;
+  padding-bottom: 5px;
+  margin-bottom: 15px;
+}
+
+ul { list-style: none; padding-left: 0; }
+li { margin-bottom: 8px; }
+
+.tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.tag { background: #333; padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; }
+
+.sidebar img { width: 100%; margin-bottom: 10px; border-radius: 8px; }
+.price { font-size: 1.2rem; color: #fff; margin: 10px 0; }
+
+.btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+  margin-bottom: 10px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.buy-btn { background: #0078ff; color: white; }
+.cart-btn, .wishlist-btn { background: #2c2c2c; color: #fff; }
+
+.footer-info {
+  font-size: 0.85rem;
+  color: #bbb;
+  margin-top: 20px;
+  border-top: 1px solid #333;
+  padding-top: 10px;
+}
+
+@media (max-width: 900px) {
+  .container { flex-direction: column; padding: 20px; }
+}
+
+/* === EFECTO ELEVACIÓN === */
+.buy-btn:hover,
+.cart-btn:hover,
+.wishlist-btn:hover,
+.modal-content .btn:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 8px 25px rgba(57,147,243,0.45);
+}
+
+/* === MODAL === */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 100;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.7);
+  justify-content: center;
+  align-items: center;
+}
+.modal-content {
+  background: #1e1e1e;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+}
+.modal-content h2 {
+  margin-bottom: 15px;
+}
+.modal-content .btn {
+  margin: 5px 0;
+  width: auto;
+  min-width: 200px;
+}
+.close-btn {
+  background: #ff0055;
+  color: #fff;
+  margin-top: 15px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="main-content">
+    <h1 id="titulo"></h1>
+    <div class="rating" id="rating"></div>
+
+    <div class="slider" id="slider">
+      <div class="slides" id="slides"></div>
+      <button class="arrow left" id="prev">&#10094;</button>
+      <button class="arrow right" id="next">&#10095;</button>
+    </div>
+    <div class="thumbnails" id="thumbnails"></div>
+
+    <section>
+      <h2>Descripción</h2>
+      <p id="descripcion"></p>
+    </section>
+
+    <section>
+      <h2>Géneros</h2>
+      <div class="tags" id="generos"></div>
+    </section>
+
+    <section>
+      <h2>Funciones</h2>
+      <div class="tags" id="funciones"></div>
+    </section>
+
+    <section>
+      <h2>Requisitos del sistema</h2>
+      <div id="requisitos"></div>
+    </section>
+  </div>
+
+  <aside class="sidebar">
+    <img id="logo" alt="logo del juego">
+    <div class="price" id="precio"></div>
+
+    <!-- Botones editados -->
+    <button class="btn buy-btn" id="btn-buy">Descarga Now!</button>
+    <button class="btn cart-btn" id="btn-cart">Ver saga completa</button>
+    <button class="btn wishlist-btn" id="btn-wish">Cerrar</button>
+
+    <div class="footer-info" id="info"></div>
+  </aside>
+</div>
+
+<!-- Modal -->
+<div class="modal" id="downloadModal">
+  <div class="modal-content">
+    <h2>Selecciona una opción</h2>
+    <button class="btn" onclick="window.location.href='https://gofile.io/d/O9ak6l'">GoFile -1</button>
+    <button class="btn close-btn" id="closeModal">Cerrar</button>
+  </div>
+</div>
+
+<script>
+const juego = {
+  titulo: "Hollow Knight",
+  rating: "★ 4.9 | Obra maestra/ Imprescindible",
+  descripcion: "¡Forja tu propio camino en Hollow Knight! Una aventura épica a través de un vasto reino de insectos y héroes que se encuentra en ruinas. Explora cavernas tortuosas, combate contra criaturas corrompidas y entabla amistad con extraños insectos, todo en un estilo clásico en 2D dibujado a mano.",
+  generos: [" Acción","aventura", "Indie"],
+  funciones: ["Compatible con mando", "Guardado en la nube", "Un solo jugador"],
+  precio: "Mediafire - Gofile",
+  logo: "https://eclipseoverclock.wordpress.com/wp-content/uploads/2025/12/header.jpg",
+  info: `
+    <strong>Desarrolladora:</strong> Team Cherry<br>
+    <strong>Editora:</strong> Team Cherry<br>
+    <strong>Fecha de lanzamiento:</strong> 24/02/17<br>
+    <strong>Plataforma:</strong> Windows<br>
+    <strong>Sitio Extraido:</strong> Discord<br>
+  `,
+  requisitos: {
+    minimos: {
+      "Versión del sistema operativo": "Windows 7",
+      "CPU": "Intel Core 2 Duo E5200",
+      "Memoria": "4 GB",
+      "GPU": "GeForce 9800 GTX+ (1 GB VRAM)",
+      "DirectX": "10",
+      "Almacenamiento": "9 GB"
+    },
+    recomendados: {
+      "Versión del sistema operativo": "Windows 10  o superior",
+      "CPU": "Intel Core i5",
+      "Memoria": "8 GB",
+      "GPU": "GeForce GTX 560",
+      "DirectX": "12",
+      "Almacenamiento": "9 GB"
+    }
+  },
+    imagenes: [
+  { 
+    page: "https://www.youtube.com/embed/UAO2urG23S4?si=R80zShrDCOpY13Pb",
+    thumbnail: "https://eclipseoverclock.wordpress.com/wp-content/uploads/2025/12/thumbnail-hollow.png"
+  },
+    { 
+    page: "https://www.youtube.com/embed/k3oRaATsfQI?si=xaLTOCaWBHLWuEqP",
+    thumbnail: "https://eclipseoverclock.wordpress.com/wp-content/uploads/2025/12/thumbnail-griim.png"
+  },
+    { 
+    page: "https://eclipseoverclock.wordpress.com/wp-content/uploads/2025/12/1-1.jpg?w=1440",
+    thumbnail: "https://eclipseoverclock.wordpress.com/wp-content/uploads/2025/12/a1.png"
+  },
+    { 
+    page: "https://eclipseoverclock.wordpress.com/wp-content/uploads/2025/12/2.jpg?w=1440",
+    thumbnail: "https://eclipseoverclock.wordpress.com/wp-content/uploads/2025/12/a2.png"
+  },
+    { 
+    page: "https://eclipseoverclock.wordpress.com/wp-content/uploads/2025/12/3.jpg?w=1440",
+    thumbnail: "https://eclipseoverclock.wordpress.com/wp-content/uploads/2025/12/a3.png"
+  },
+    { 
+    page: "https://eclipseoverclock.wordpress.com/wp-content/uploads/2025/12/4.jpg?w=1440",
+    thumbnail: "https://eclipseoverclock.wordpress.com/wp-content/uploads/2025/12/a4.png"
+  },
+    { 
+    page: "https://eclipseoverclock.wordpress.com/wp-content/uploads/2025/12/5.jpg?w=1440",
+    thumbnail: "https://eclipseoverclock.wordpress.com/wp-content/uploads/2025/12/a5.png"
+  },
+    { 
+    page: "https://eclipseoverclock.wordpress.com/wp-content/uploads/2025/12/6.jpg?w=1440",
+    thumbnail: "https://eclipseoverclock.wordpress.com/wp-content/uploads/2025/12/a6.png"
+  }
+  
+]
+};
+
+// Render de texto e info
+document.getElementById('titulo').textContent = juego.titulo;
+document.getElementById('rating').textContent = juego.rating;
+document.getElementById('descripcion').textContent = juego.descripcion;
+document.getElementById('precio').textContent = juego.precio;
+document.getElementById('logo').src = juego.logo;
+document.getElementById('info').innerHTML = juego.info;
+
+// Tags
+juego.generos.forEach(g => {
+  const tag = document.createElement('div');
+  tag.className = 'tag';
+  tag.textContent = g;
+  document.getElementById('generos').appendChild(tag);
+});
+juego.funciones.forEach(f => {
+  const tag = document.createElement('div');
+  tag.className = 'tag';
+  tag.textContent = f;
+  document.getElementById('funciones').appendChild(tag);
+});
+
+// Requisitos
+let reqHTML = `
+<div style="display:flex; gap:30px; flex-wrap:wrap;">
+  <div><h3>🖥️ Mínimos</h3><ul>
+    ${Object.entries(juego.requisitos.minimos).map(([k,v])=>`<li><strong>${k}:</strong> ${v}</li>`).join('')}
+  </ul></div>
+  <div><h3>⚙️ Recomendado</h3><ul>
+    ${Object.entries(juego.requisitos.recomendados).map(([k,v])=>`<li><strong>${k}:</strong> ${v}</li>`).join('')}
+  </ul></div>
+</div>`;
+document.getElementById('requisitos').innerHTML = reqHTML;
+
+// === Slider ===
+const slides = document.getElementById('slides');
+const thumbnails = document.getElementById('thumbnails');
+let index = 0;
+
+function crearMedia(url) {
+  const lower = url.toLowerCase();
+
+  // 1️⃣ Detectar imágenes
+  if (lower.match(/\.(jpg|jpeg|png|webp)(\?.*)?$/)) {
+    const img = document.createElement("img");
+    img.src = url;
+    img.alt = "imagen del juego";
+    img.onerror = () =>
+      (img.src = "https://via.placeholder.com/800x450?text=Imagen+no+disponible");
+    return img;
+  }
+
+  // 2️⃣ Detectar videos directos (.mp4 .webm .ogg)
+  if (lower.match(/\.(mp4|webm|ogg)$/)) {
+    const vid = document.createElement("video");
+    vid.src = url;
+    vid.controls = true;
+    vid.preload = "metadata";
+    vid.style.background = "#000";
+    return vid;
+  }
+
+  // 3️⃣ Detectar plataformas que SOLO funcionan con <iframe>
+  const iframePlatforms = [
+    "youtube.com",
+    "youtu.be",
+    "vimeo.com",
+    "dailymotion.com",
+    "tiktok.com",
+    "twitch.tv"
+  ];
+
+  const requiereIframe = iframePlatforms.some(p => url.includes(p));
+
+  if (requiereIframe) {
+    const iframe = document.createElement("iframe");
+    iframe.src = url;
+    iframe.allow =
+      "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen";
+    iframe.frameBorder = "0";
+    iframe.loading = "lazy";
+    iframe.style.background = "#000";
+    return iframe;
+  }
+
+  // 4️⃣ TODO lo desconocido → iframe como fallback seguro
+  const iframe = document.createElement("iframe");
+  iframe.src = url;
+  iframe.allow = "autoplay; fullscreen";
+  iframe.frameBorder = "0";
+  iframe.loading = "lazy";
+  iframe.style.background = "#000";
+  return iframe;
+}
+
+// Render de slides + miniaturas (con soporte para thumbnails personalizados)
+juego.imagenes.forEach((item, i) => {
+  const el = crearMedia(item.page);
+  slides.appendChild(el);
+
+  const thumb = document.createElement("img");
+
+  // Si el usuario especifica un thumbnail → usarlo
+  if (item.thumbnail) {
+    thumb.src = item.thumbnail;
+  }
+  // Si es una imagen → usar la misma imagen
+  else if (item.page.match(/\.(jpg|jpeg|png|webp)$/)) {
+    thumb.src = item.page;
+  }
+  // Si es un video o iframe sin thumbnail → ícono por defecto
+  else {
+    thumb.src = "https://img.icons8.com/ios-filled/50/ffffff/play-button-circled.png";
+    thumb.style.background = "#000";
+    thumb.style.objectFit = "contain";
+  }
+
+  thumb.addEventListener("click", () => showSlide(i));
+  thumbnails.appendChild(thumb);
+});
+
+function showSlide(i) {
+  index = i;
+  slides.style.transform = `translateX(${-index * 100}%)`;
+  document.querySelectorAll('.thumbnails img').forEach((el, idx) => {
+    el.classList.toggle('active', idx === i);
+  });
+}
+
+document.getElementById("next").onclick = () => {
+  index = (index + 1) % juego.imagenes.length;
+  showSlide(index);
+};
+document.getElementById("prev").onclick = () => {
+  index = (index - 1 + juego.imagenes.length) % juego.imagenes.length;
+  showSlide(index);
+};
+
+showSlide(0);
+
+// === REDIRECCIÓN DE BOTONES ===
+document.getElementById("btn-buy").onclick = () => {
+  document.getElementById("downloadModal").style.display = "flex";
+};
+document.getElementById("btn-cart").onclick = () => location.href = "../../sagas-eclipse/Hollow-Night-saga/HollowKnight.html";
+document.getElementById("btn-wish").onclick = () => location.href = "../../Eclipse/catalogo.html";
+
+// Cerrar modal con botón
+document.getElementById("closeModal").onclick = () => {
+  document.getElementById("downloadModal").style.display = "none";
+};
+
+// Cerrar modal al hacer clic fuera del contenido
+window.onclick = (event) => {
+  const modal = document.getElementById("downloadModal");
+  if (event.target === modal) {
+    modal.style.display = "none";
+  }
+};
+</script>
+
+<!-- 🔥 SISTEMA ANTI-CACHÉ -->
+<script src="../../version.js?v"></script>
+<script src="../../force-update.js?v"></script>
+
+</body>
+</html>
